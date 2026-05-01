@@ -1,0 +1,15 @@
+build/
+build-*/
+dist/
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+*.exe
+*.ali
+*.pyc
+__pycache__/
+

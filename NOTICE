@@ -1,0 +1,6 @@
+HESIA CoreLib
+
+Copyright 2026 HESIA contributors.
+
+This product may link against OpenSSL and liboqs when explicitly configured.
+Those dependencies keep their own licenses and security policies.

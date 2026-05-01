@@ -1,0 +1,13 @@
+[package]
+name = "hesia-core"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Rust FFI bindings for HESIA CoreLib"
+
+[lib]
+name = "hesia_core"
+path = "src/lib.rs"
+
+[features]
+default = []

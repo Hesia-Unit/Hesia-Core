@@ -53,6 +53,7 @@ extern "C" {
     fn hesia_version() -> *const c_char;
     fn hesia_status_string(status: c_int) -> *const c_char;
     fn hesia_feature_available(feature: c_int) -> c_int;
+    fn hesia_feature_provider_version(feature: c_int) -> *const c_char;
     fn hesia_error_init(error: *mut HesiaError);
     fn hesia_error_message(error: *const HesiaError) -> *const c_char;
     fn hesia_random(out: *mut u8, len: usize, error: *mut HesiaError) -> c_int;
@@ -99,6 +100,10 @@ pub fn status_string(status: i32) -> String {
 
 pub fn feature_available(feature: i32) -> bool {
     unsafe { hesia_feature_available(feature) != 0 }
+}
+
+pub fn provider_version(feature: i32) -> String {
+    unsafe { cstr(hesia_feature_provider_version(feature)) }
 }
 
 pub fn random_bytes(len: usize) -> Result<Vec<u8>, Error> {

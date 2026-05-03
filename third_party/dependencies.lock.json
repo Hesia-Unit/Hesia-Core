@@ -1,0 +1,40 @@
+{
+  "schema": 1,
+  "project": "hesia-core",
+  "policy": "Vendored, reproducible provider builds for the public CoreLib distribution.",
+  "dependencies": {
+    "openssl": {
+      "version": "3.5.6",
+      "track": "LTS",
+      "url": "https://www.openssl.org/source/openssl-3.5.6.tar.gz",
+      "windowsConfigureTarget": "mingw64",
+      "linuxConfigureTarget": "linux-generic64",
+      "license": "Apache-2.0",
+      "purpose": "AES-256-GCM, provider random, future TLS-facing helpers"
+    },
+    "liboqs": {
+      "version": "0.15.0",
+      "url": "https://github.com/open-quantum-safe/liboqs/archive/refs/tags/0.15.0.tar.gz",
+      "minimalAlgorithms": [
+        "KEM_ml_kem_768",
+        "KEM_ml_kem_1024",
+        "SIG_ml_dsa_65",
+        "SIG_ml_dsa_87"
+      ],
+      "license": "MIT",
+      "purpose": "ML-KEM and ML-DSA post-quantum provider"
+    }
+  },
+  "buildTools": {
+    "cmake": {
+      "version": "3.31.8",
+      "windowsUrl": "https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-windows-x86_64.zip",
+      "purpose": "Portable Windows build of liboqs when CMake is not installed"
+    },
+    "wix": {
+      "version": "3.14.1",
+      "windowsUrl": "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip",
+      "purpose": "MSI generation without requiring a global WiX install"
+    }
+  }
+}

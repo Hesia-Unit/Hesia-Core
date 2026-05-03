@@ -97,6 +97,8 @@ def _configure(lib: ctypes.CDLL) -> None:
     lib.hesia_status_string.restype = c_char_p
     lib.hesia_feature_available.argtypes = [c_int]
     lib.hesia_feature_available.restype = c_int
+    lib.hesia_feature_provider_version.argtypes = [c_int]
+    lib.hesia_feature_provider_version.restype = c_char_p
     lib.hesia_error_init.argtypes = [ctypes.POINTER(HesiaErrorStruct)]
     lib.hesia_error_message.argtypes = [ctypes.POINTER(HesiaErrorStruct)]
     lib.hesia_error_message.restype = c_char_p
@@ -142,6 +144,10 @@ class HesiaCore:
 
     def feature_available(self, feature: int) -> bool:
         return bool(self.lib.hesia_feature_available(feature))
+
+    def provider_version(self, feature: int) -> str:
+        raw = self.lib.hesia_feature_provider_version(feature)
+        return raw.decode("utf-8", errors="replace") if raw else ""
 
     def random(self, length: int) -> bytes:
         out = (c_uint8 * length)()

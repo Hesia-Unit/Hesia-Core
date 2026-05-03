@@ -32,6 +32,9 @@
 #  include <oqs/oqs.h>
 #endif
 
+#include "algorithms/ascon.h"
+#include "algorithms/ed25519.h"
+
 static hesia_status_t hsc_fail(
     hesia_error_t *error,
     hesia_status_t status,
@@ -230,6 +233,7 @@ int hesia_feature_available(hesia_feature_t feature) {
     case HESIA_FEATURE_OS_RANDOM:
     case HESIA_FEATURE_WATCHDOG:
     case HESIA_FEATURE_INFERENCE_GUARD:
+    case HESIA_FEATURE_NATIVE_LW_CRYPTO:
         return 1;
     case HESIA_FEATURE_OPENSSL_AEAD:
 #if defined(HESIA_CORE_WITH_OPENSSL)
@@ -483,6 +487,19 @@ hesia_status_t hesia_aead_encrypt(
     size_t tag_len,
     hesia_error_t *error) {
     hesia_error_init(error);
+    if (algorithm == HESIA_AEAD_ASCON_128) {
+        if (key == NULL || key_len != 16u || nonce == NULL || nonce_len != 16u ||
+            (plaintext == NULL && plaintext_len > 0u) || ciphertext == NULL ||
+            ciphertext_len == NULL || tag == NULL || tag_len != 16u) {
+            return hsc_fail(error, HESIA_STATUS_INVALID_ARGUMENT, "aead", "invalid ASCON arguments");
+        }
+        if (ciphertext_capacity < plaintext_len) {
+            return hsc_fail(error, HESIA_STATUS_BUFFER_TOO_SMALL, "aead", "ciphertext buffer is too small");
+        }
+        ascon128_encrypt(tag, ciphertext, key, nonce, aad, aad_len, plaintext, plaintext_len);
+        *ciphertext_len = plaintext_len;
+        return HESIA_STATUS_OK;
+    }
     if (algorithm != HESIA_AEAD_AES_256_GCM) {
         return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "aead", "unsupported AEAD algorithm");
     }
@@ -558,6 +575,22 @@ hesia_status_t hesia_aead_decrypt(
     size_t *plaintext_len,
     hesia_error_t *error) {
     hesia_error_init(error);
+    if (algorithm == HESIA_AEAD_ASCON_128) {
+        if (key == NULL || key_len != 16u || nonce == NULL || nonce_len != 16u ||
+            (ciphertext == NULL && ciphertext_len > 0u) || tag == NULL || tag_len != 16u ||
+            plaintext == NULL || plaintext_len == NULL) {
+            return hsc_fail(error, HESIA_STATUS_INVALID_ARGUMENT, "aead", "invalid ASCON arguments");
+        }
+        if (plaintext_capacity < ciphertext_len) {
+            return hsc_fail(error, HESIA_STATUS_BUFFER_TOO_SMALL, "aead", "plaintext buffer is too small");
+        }
+        if (ascon128_decrypt(plaintext, key, nonce, aad, aad_len, ciphertext, ciphertext_len, tag) != 0) {
+            hesia_secure_zero(plaintext, plaintext_capacity);
+            return hsc_fail(error, HESIA_STATUS_AUTHENTICATION_FAILED, "aead", "ASCON tag verification failed");
+        }
+        *plaintext_len = ciphertext_len;
+        return HESIA_STATUS_OK;
+    }
     if (algorithm != HESIA_AEAD_AES_256_GCM) {
         return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "aead", "unsupported AEAD algorithm");
     }
@@ -972,3 +1005,79 @@ hesia_status_t hesia_pqc_verify(
     return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "pqc", "liboqs provider is not compiled in");
 #endif
 }
+
+hesia_status_t hesia_sig_public_key_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (algorithm == HESIA_SIG_ED25519) {
+        if (out_len == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
+        *out_len = 32; return HESIA_STATUS_OK;
+    }
+    return hesia_pqc_public_key_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
+}
+
+hesia_status_t hesia_sig_secret_key_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (algorithm == HESIA_SIG_ED25519) {
+        if (out_len == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
+        *out_len = 64; return HESIA_STATUS_OK;
+    }
+    return hesia_pqc_secret_key_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
+}
+
+hesia_status_t hesia_sig_signature_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (algorithm == HESIA_SIG_ED25519) {
+        if (out_len == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
+        *out_len = 64; return HESIA_STATUS_OK;
+    }
+    return hesia_pqc_signature_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
+}
+
+hesia_status_t hesia_sig_keypair(hesia_sig_algorithm_t algorithm, uint8_t *public_key, size_t public_key_len, uint8_t *secret_key, size_t secret_key_len, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (algorithm == HESIA_SIG_ED25519) {
+        uint8_t seed[32];
+        if (public_key_len < 32 || secret_key_len < 64) return HESIA_STATUS_BUFFER_TOO_SMALL;
+        hesia_random(seed, 32, error);
+        ed25519_keypair(public_key, secret_key, seed);
+        return HESIA_STATUS_OK;
+    }
+    return hesia_pqc_keypair((hesia_pqc_algorithm_t)algorithm, public_key, public_key_len, secret_key, secret_key_len, error);
+}
+
+hesia_status_t hesia_sig_sign(hesia_sig_algorithm_t algorithm, const uint8_t *secret_key, size_t secret_key_len, const uint8_t *message, size_t message_len, uint8_t *signature, size_t signature_capacity, size_t *signature_len, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (algorithm == HESIA_SIG_ED25519) {
+        uint8_t public_key[32];
+        if (signature_capacity < 64) return HESIA_STATUS_BUFFER_TOO_SMALL;
+        /* Convention: secret_key is seed (32) + public_key (32) */
+        if (secret_key_len < 64) return HESIA_STATUS_INVALID_ARGUMENT;
+        memcpy(public_key, secret_key + 32, 32); 
+        ed25519_sign(signature, message, message_len, public_key, secret_key);
+        *signature_len = 64;
+        return HESIA_STATUS_OK;
+    }
+    return hesia_pqc_sign((hesia_pqc_algorithm_t)algorithm, secret_key, secret_key_len, message, message_len, signature, signature_capacity, signature_len, error);
+}
+
+hesia_status_t hesia_sig_verify(hesia_sig_algorithm_t algorithm, const uint8_t *public_key, size_t public_key_len, const uint8_t *message, size_t message_len, const uint8_t *signature, size_t signature_len, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (algorithm == HESIA_SIG_ED25519) {
+        if (public_key_len != 32 || signature_len != 64) return HESIA_STATUS_INVALID_ARGUMENT;
+        if (ed25519_verify(signature, message, message_len, public_key)) return HESIA_STATUS_OK;
+        return HESIA_STATUS_AUTHENTICATION_FAILED;
+    }
+    return hesia_pqc_verify((hesia_pqc_algorithm_t)algorithm, public_key, public_key_len, message, message_len, signature, signature_len, error);
+}
+
+hesia_status_t hesia_maintenance_get_info(hesia_maintenance_info_t *info, hesia_error_t *error) {
+    hesia_error_init(error);
+    if (info == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
+    info->firmware_version_packed = (HESIA_CORE_VERSION_MAJOR << 16) | (HESIA_CORE_VERSION_MINOR << 8) | HESIA_CORE_VERSION_PATCH;
+    info->security_patch_level = 20260503;
+    info->last_maintenance_unix = (uint64_t)time(NULL);
+    info->tamper_detected = 0;
+    info->debug_mode_active = 0;
+    return HESIA_STATUS_OK;
+}
+

@@ -27,6 +27,10 @@ public func featureAvailable(_ feature: hesia_feature_t) -> Bool {
     hesia_feature_available(feature) != 0
 }
 
+public func providerVersion(_ feature: hesia_feature_t) -> String {
+    String(cString: hesia_feature_provider_version(feature))
+}
+
 public func randomBytes(count: Int) throws -> [UInt8] {
     var out = [UInt8](repeating: 0, count: count)
     var error = hesia_error_t()

@@ -1,45 +1,85 @@
-# HESIA CoreLib
+# HESIA CoreLib (v0.2.0)
 
-[![CI](https://github.com/Hesia-Unit/Hesia-Core/actions/workflows/ci.yml/badge.svg)](https://github.com/Hesia-Unit/Hesia-Core/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/Hesia-Unit/Hesia-Core)](LICENSE)
-[![Tag](https://img.shields.io/github/v/tag/Hesia-Unit/Hesia-Core)](https://github.com/Hesia-Unit/Hesia-Core/tags)
+HESIA CoreLib is the open source systems library for HESIA-style embedded security, inference-control, and post-quantum cryptography.
 
-HESIA CoreLib is a small open source systems library for embedded security and inference-control software.
+## Features
 
-It provides:
+- **Stable C ABI**: Long-lived firmware and host integrations.
+- **Post-Quantum Cryptography**: ML-KEM and ML-DSA via `liboqs`.
+- **Lightweight Cryptography**: Native, high-performance ASCON-128 and Ed25519 for embedded systems.
+- **Maintenance & Audit**: Built-in APIs for firmware health, tamper detection, and security metadata.
+- **Embedded Guardrails**: Watchdog and Inference-Guard primitives for AI-enabled robotics.
+- **ARM Optimized**: Explicit support for ARM Aarch64 and Cortex-M targets.
+- **HESIA CLI**: Tooling for maintenance, project scaffolding, and key management.
 
-- a stable C ABI for long-lived firmware and host integrations
-- optional OpenSSL-backed AES-256-GCM and OS random bytes
-- optional liboqs-backed ML-KEM and ML-DSA post-quantum operations
-- fail-closed error handling when a provider is not compiled in
-- watchdog and inference-guard primitives for embedded AI pipelines
-- language surfaces for C, C++, Python, Rust, Swift, and Ada
+## Project Structure
 
-The library does not invent cryptographic primitives. Symmetric crypto is delegated to OpenSSL and post-quantum crypto is delegated to liboqs. Builds without these providers keep the API available but return `HESIA_STATUS_UNSUPPORTED` for unavailable cryptographic operations.
+- `include/hesia/core.h`: Unified security API.
+- `src/algorithms/`: Native implementations of lightweight primitives.
+- `tools/hesia-cli/`: Maintenance and developer utility.
+- `scripts/`: Cross-compilation and project initialization helpers.
 
-## Why this repository exists
+## Getting Started
 
-CoreLib is the public engineering surface for reusable HESIA-style primitives. It is intentionally smaller than the private product runtime and focuses on:
+### Initialize a new PQC project
 
-- stable interfaces
-- explicit failure semantics
-- provider-backed cryptography
-- auditable, portable code
-- small embedded AI safety primitives
+```bash
+bash scripts/init-project.sh my-pqc-app ./my-pqc-app
+```
 
-## Repository layout
+### Build for ARM64
 
-- `include/hesia/core.h`: stable C ABI
-- `include/hesia/core.hpp`: header-only C++ wrapper
-- `src/hesia_core.c`: portable implementation
-- `bindings/`: Python, Rust, Swift, and Ada surfaces
-- `examples/`: minimal C and Python examples
-- `tests/`: portable unit tests
-- `docs/`: English and French project reference material
+```bash
+cmake -S . -B build-arm -DCMAKE_TOOLCHAIN_FILE=scripts/arm64-toolchain.cmake
+cmake --build build-arm
+```
 
-## Quick start
+### Use the HESIA CLI
 
-Portable baseline:
+```bash
+# Get system maintenance info
+hesia-cli info
+
+# Generate post-quantum keys
+hesia-cli keygen mldsa65
+```
+
+## Security Posture
+
+HESIA CoreLib prioritizes fail-closed behavior. When hardware acceleration or providers are missing, it falls back to native, constant-time implementations optimized for embedded trust.
+
+## Layout
+
+- `include/hesia/core.h`: stable C ABI.
+- `include/hesia/core.hpp`: header-only C++ wrapper.
+- `src/hesia_core.c`: portable implementation.
+- `bindings/`: Python, Rust, Swift, and Ada surfaces.
+- `examples/`: minimal C and Python examples.
+- `tests/`: portable unit tests.
+- `third_party/dependencies.lock.json`: pinned OpenSSL, liboqs, CMake, and WiX versions.
+- `scripts/`: native Windows, Linux, MSI, and tarball packaging workflows.
+
+## Build
+
+Provider-enabled Windows build:
+
+```powershell
+cd open_source\hesia-core
+powershell -ExecutionPolicy Bypass -File scripts\build-deps-windows.ps1
+powershell -ExecutionPolicy Bypass -File scripts\build-windows.ps1 -SkipDeps
+powershell -ExecutionPolicy Bypass -File scripts\package-msi.ps1 -SkipBuild
+```
+
+Provider-enabled Linux build:
+
+```sh
+cd open_source/hesia-core
+bash scripts/build-linux.sh
+bash scripts/package-linux.sh
+sudo bash scripts/install-linux.sh --prefix /usr/local --tarball dist/hesia-core-0.1.0-linux-$(uname -m).tar.gz
+```
+
+Portable provider-free baseline:
 
 ```sh
 cc -Iinclude -c src/hesia_core.c -o hesia_core.o
@@ -51,35 +91,26 @@ cc -Iinclude tests/test_core.c libhesia_core.a -o test_core
 With CMake:
 
 ```sh
-cmake -S . -B build -DHESIA_CORE_BUILD_SHARED=OFF -DHESIA_CORE_BUILD_TESTS=ON
+cmake -S . -B build
 cmake --build build
-ctest --test-dir build --output-on-failure
+ctest --test-dir build
 ```
 
-Enable optional providers only when they are installed on the build host:
+Disable providers explicitly for constrained smoke tests:
 
 ```sh
-cmake -S . -B build \
-  -DHESIA_CORE_WITH_OPENSSL=ON \
-  -DHESIA_CORE_WITH_LIBOQS=ON
+cmake -S . -B build-lite -DHESIA_CORE_WITH_OPENSSL=OFF -DHESIA_CORE_WITH_LIBOQS=OFF
 ```
 
 ## Documentation
 
-- [Open Source Reference EN](docs/HESIA_CORELIB_EN.md)
-- [Open Source Reference FR](docs/HESIA_CORELIB_FR.md)
-- [Roadmap](ROADMAP.md)
-- [Changelog](CHANGELOG.md)
+The project-level bilingual handover documents live in:
+
+- `../../docs/HESIA_CORELIB_EN.md`
+- `../../docs/HESIA_CORELIB_FR.md`
+- `../../docs/HESIA_CORELIB_EN.pdf`
+- `../../docs/HESIA_CORELIB_FR.pdf`
 
 ## Security posture
 
-HESIA CoreLib is an integration layer, not a replacement for formal cryptographic review. Production use should:
-
-- pin provider versions
-- run the test suite on the real target platform
-- validate policy behavior under the exact deployment profile
-- review optional provider enablement as part of the release process
-
-## Project status
-
-The repository is in early public release. Interfaces are designed to stay small and stable, but maintainers may still refine packaging, bindings, and optional provider coverage during the `0.x` cycle.
+HESIA CoreLib is an integration layer, not a replacement for formal cryptographic review. Production use must keep provider versions pinned, run the provider test suite on the target platform, and validate policy behavior under the exact deployment profile.

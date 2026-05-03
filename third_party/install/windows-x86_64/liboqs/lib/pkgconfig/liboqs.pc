@@ -1,0 +1,10 @@
+prefix=C:/Users/matis/Documents/Hesia-Firmware/open_source/hesia-core/third_party/install/windows-x86_64/liboqs
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: liboqs
+Description: Library for quantum-safe cryptographic algorithms
+Version: 0.15.0
+Requires.private: 
+Cflags: -I${includedir}
+Libs: -L${libdir} -loqs

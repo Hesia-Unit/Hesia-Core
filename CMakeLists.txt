@@ -3,8 +3,19 @@ project(hesia_core VERSION 0.1.0 LANGUAGES C)
 
 option(HESIA_CORE_BUILD_SHARED "Build a shared library" ON)
 option(HESIA_CORE_BUILD_TESTS "Build HESIA Core tests" ON)
-option(HESIA_CORE_WITH_OPENSSL "Enable OpenSSL AES-GCM and RAND provider" OFF)
-option(HESIA_CORE_WITH_LIBOQS "Enable liboqs ML-KEM and ML-DSA provider" OFF)
+option(HESIA_CORE_WITH_OPENSSL "Enable OpenSSL AES-GCM and RAND provider" ON)
+option(HESIA_CORE_WITH_LIBOQS "Enable liboqs ML-KEM and ML-DSA provider" ON)
+option(HESIA_CORE_VENDOR_DEPS "Prefer dependencies built under third_party/install" ON)
+
+if(WIN32)
+    set(HESIA_CORE_VENDOR_TRIPLE "windows-x86_64")
+else()
+    string(TOLOWER "${CMAKE_SYSTEM_NAME}" HESIA_CORE_SYSTEM_NAME)
+    set(HESIA_CORE_VENDOR_TRIPLE "${HESIA_CORE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+set(HESIA_CORE_DEPS_ROOT
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/install/${HESIA_CORE_VENDOR_TRIPLE}"
+    CACHE PATH "HESIA Core vendored dependency prefix")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -12,10 +23,18 @@ set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 
 if(HESIA_CORE_BUILD_SHARED)
-    add_library(hesia_core SHARED src/hesia_core.c)
+    add_library(hesia_core SHARED 
+        src/hesia_core.c
+        src/algorithms/ascon.c
+        src/algorithms/ed25519.c
+    )
     target_compile_definitions(hesia_core PRIVATE HESIA_CORE_EXPORTS HESIA_CORE_BUILD_SHARED)
 else()
-    add_library(hesia_core STATIC src/hesia_core.c)
+    add_library(hesia_core STATIC 
+        src/hesia_core.c
+        src/algorithms/ascon.c
+        src/algorithms/ed25519.c
+    )
 endif()
 
 target_include_directories(hesia_core
@@ -34,14 +53,20 @@ else()
 endif()
 
 if(HESIA_CORE_WITH_OPENSSL)
+    if(HESIA_CORE_VENDOR_DEPS)
+        set(OPENSSL_ROOT_DIR "${HESIA_CORE_DEPS_ROOT}/openssl")
+    endif()
     find_package(OpenSSL REQUIRED)
     target_compile_definitions(hesia_core PRIVATE HESIA_CORE_WITH_OPENSSL)
     target_link_libraries(hesia_core PRIVATE OpenSSL::Crypto)
 endif()
 
 if(HESIA_CORE_WITH_LIBOQS)
-    find_path(LIBOQS_INCLUDE_DIR NAMES oqs/oqs.h PATHS $ENV{LIBOQS_ROOT} PATH_SUFFIXES include)
-    find_library(LIBOQS_LIBRARY NAMES oqs PATHS $ENV{LIBOQS_ROOT} PATH_SUFFIXES lib build/lib)
+    set(HESIA_CORE_LIBOQS_PATHS
+        "${HESIA_CORE_DEPS_ROOT}/liboqs"
+        "$ENV{LIBOQS_ROOT}")
+    find_path(LIBOQS_INCLUDE_DIR NAMES oqs/oqs.h PATHS ${HESIA_CORE_LIBOQS_PATHS} PATH_SUFFIXES include)
+    find_library(LIBOQS_LIBRARY NAMES oqs liboqs PATHS ${HESIA_CORE_LIBOQS_PATHS} PATH_SUFFIXES lib build/lib)
     if(NOT LIBOQS_INCLUDE_DIR OR NOT LIBOQS_LIBRARY)
         message(FATAL_ERROR "HESIA_CORE_WITH_LIBOQS=ON but liboqs was not found")
     endif()
@@ -59,6 +84,11 @@ if(HESIA_CORE_BUILD_TESTS)
     add_executable(hesia_core_tests tests/test_core.c)
     target_link_libraries(hesia_core_tests PRIVATE hesia_core)
     add_test(NAME hesia_core_tests COMMAND hesia_core_tests)
+    if(HESIA_CORE_WITH_OPENSSL AND HESIA_CORE_WITH_LIBOQS)
+        add_executable(hesia_core_provider_tests tests/test_providers.c)
+        target_link_libraries(hesia_core_provider_tests PRIVATE hesia_core)
+        add_test(NAME hesia_core_provider_tests COMMAND hesia_core_provider_tests)
+    endif()
 endif()
 
 install(TARGETS hesia_core
@@ -68,3 +98,8 @@ install(TARGETS hesia_core
     ARCHIVE DESTINATION lib
 )
 install(DIRECTORY include/ DESTINATION include)
+
+# Tools
+add_executable(hesia-cli tools/hesia-cli/main.c)
+target_link_libraries(hesia-cli PRIVATE hesia_core)
+install(TARGETS hesia-cli RUNTIME DESTINATION bin)

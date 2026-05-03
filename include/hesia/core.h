@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 #define HESIA_CORE_VERSION_MAJOR 0u
-#define HESIA_CORE_VERSION_MINOR 1u
+#define HESIA_CORE_VERSION_MINOR 2u
 #define HESIA_CORE_VERSION_PATCH 0u
 
 #define HESIA_ERROR_SUBSYSTEM_BYTES 32u
@@ -38,7 +38,8 @@ typedef enum hesia_status {
     HESIA_STATUS_WATCHDOG_EXPIRED = 7,
     HESIA_STATUS_INFERENCE_REJECTED = 8,
     HESIA_STATUS_IO_ERROR = 9,
-    HESIA_STATUS_INTERNAL_ERROR = 10
+    HESIA_STATUS_INTERNAL_ERROR = 10,
+    HESIA_STATUS_MAINTENANCE_REQUIRED = 11
 } hesia_status_t;
 
 typedef enum hesia_feature {
@@ -46,11 +47,13 @@ typedef enum hesia_feature {
     HESIA_FEATURE_OPENSSL_AEAD = 2,
     HESIA_FEATURE_LIBOQS_PQC = 3,
     HESIA_FEATURE_WATCHDOG = 4,
-    HESIA_FEATURE_INFERENCE_GUARD = 5
+    HESIA_FEATURE_INFERENCE_GUARD = 5,
+    HESIA_FEATURE_NATIVE_LW_CRYPTO = 6
 } hesia_feature_t;
 
 typedef enum hesia_aead_algorithm {
-    HESIA_AEAD_AES_256_GCM = 1
+    HESIA_AEAD_AES_256_GCM = 1,
+    HESIA_AEAD_ASCON_128 = 2
 } hesia_aead_algorithm_t;
 
 typedef enum hesia_pqc_algorithm {
@@ -59,6 +62,12 @@ typedef enum hesia_pqc_algorithm {
     HESIA_PQC_ML_DSA_65 = 3,
     HESIA_PQC_ML_DSA_87 = 4
 } hesia_pqc_algorithm_t;
+
+typedef enum hesia_sig_algorithm {
+    HESIA_SIG_ED25519 = 1,
+    HESIA_SIG_ML_DSA_65 = 2,
+    HESIA_SIG_ML_DSA_87 = 3
+} hesia_sig_algorithm_t;
 
 typedef enum hesia_inference_state {
     HESIA_INFERENCE_IDLE = 0,
@@ -243,6 +252,59 @@ HESIA_CORE_API hesia_status_t hesia_pqc_verify(
     size_t message_len,
     const uint8_t *signature,
     size_t signature_len,
+    hesia_error_t *error);
+
+/* Generic Signature API */
+HESIA_CORE_API hesia_status_t hesia_sig_public_key_bytes(
+    hesia_sig_algorithm_t algorithm,
+    size_t *out_len,
+    hesia_error_t *error);
+HESIA_CORE_API hesia_status_t hesia_sig_secret_key_bytes(
+    hesia_sig_algorithm_t algorithm,
+    size_t *out_len,
+    hesia_error_t *error);
+HESIA_CORE_API hesia_status_t hesia_sig_signature_bytes(
+    hesia_sig_algorithm_t algorithm,
+    size_t *out_len,
+    hesia_error_t *error);
+HESIA_CORE_API hesia_status_t hesia_sig_keypair(
+    hesia_sig_algorithm_t algorithm,
+    uint8_t *public_key,
+    size_t public_key_len,
+    uint8_t *secret_key,
+    size_t secret_key_len,
+    hesia_error_t *error);
+HESIA_CORE_API hesia_status_t hesia_sig_sign(
+    hesia_sig_algorithm_t algorithm,
+    const uint8_t *secret_key,
+    size_t secret_key_len,
+    const uint8_t *message,
+    size_t message_len,
+    uint8_t *signature,
+    size_t signature_capacity,
+    size_t *signature_len,
+    hesia_error_t *error);
+HESIA_CORE_API hesia_status_t hesia_sig_verify(
+    hesia_sig_algorithm_t algorithm,
+    const uint8_t *public_key,
+    size_t public_key_len,
+    const uint8_t *message,
+    size_t message_len,
+    const uint8_t *signature,
+    size_t signature_len,
+    hesia_error_t *error);
+
+/* Maintenance and System Metadata */
+typedef struct hesia_maintenance_info {
+    uint32_t firmware_version_packed;
+    uint32_t security_patch_level;
+    uint64_t last_maintenance_unix;
+    int tamper_detected;
+    int debug_mode_active;
+} hesia_maintenance_info_t;
+
+HESIA_CORE_API hesia_status_t hesia_maintenance_get_info(
+    hesia_maintenance_info_t *info,
     hesia_error_t *error);
 
 #ifdef __cplusplus

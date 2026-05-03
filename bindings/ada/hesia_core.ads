@@ -44,6 +44,9 @@ package Hesia_Core is
    function Feature_Available (Feature : Interfaces.C.int) return Interfaces.C.int
      with Import, Convention => C, External_Name => "hesia_feature_available";
 
+   function Feature_Provider_Version (Feature : Interfaces.C.int) return Interfaces.C.Strings.chars_ptr
+     with Import, Convention => C, External_Name => "hesia_feature_provider_version";
+
    procedure Error_Init (Err : access Error)
      with Import, Convention => C, External_Name => "hesia_error_init";
 

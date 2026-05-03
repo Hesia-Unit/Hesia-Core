@@ -18,11 +18,26 @@ package Hesia_Core is
    Status_Inference_Rejected    : constant Status := 8;
    Status_IO_Error              : constant Status := 9;
    Status_Internal_Error        : constant Status := 10;
+   Status_Maintenance_Required : constant Status := 11;
+
+   subtype Sig_Algorithm is Interfaces.C.int;
+   Sig_Ed25519    : constant Sig_Algorithm := 1;
+   Sig_ML_DSA_65  : constant Sig_Algorithm := 2;
+   Sig_ML_DSA_87  : constant Sig_Algorithm := 3;
 
    type Error is record
       Status_Field : Status;
       Subsystem    : Interfaces.C.char_array (0 .. 31);
       Message      : Interfaces.C.char_array (0 .. 191);
+   end record
+     with Convention => C;
+
+   type Maintenance_Info is record
+      Firmware_Version_Packed : Interfaces.C.unsigned;
+      Security_Patch_Level    : Interfaces.C.unsigned;
+      Last_Maintenance_Unix   : Interfaces.C.unsigned_long_long;
+      Tamper_Detected         : Interfaces.C.int;
+      Debug_Mode_Active       : Interfaces.C.int;
    end record
      with Convention => C;
 
@@ -41,12 +56,6 @@ package Hesia_Core is
    function Status_String (Code : Status) return Interfaces.C.Strings.chars_ptr
      with Import, Convention => C, External_Name => "hesia_status_string";
 
-   function Feature_Available (Feature : Interfaces.C.int) return Interfaces.C.int
-     with Import, Convention => C, External_Name => "hesia_feature_available";
-
-   function Feature_Provider_Version (Feature : Interfaces.C.int) return Interfaces.C.Strings.chars_ptr
-     with Import, Convention => C, External_Name => "hesia_feature_provider_version";
-
    procedure Error_Init (Err : access Error)
      with Import, Convention => C, External_Name => "hesia_error_init";
 
@@ -59,29 +68,32 @@ package Hesia_Core is
       Err    : access Error) return Status
      with Import, Convention => C, External_Name => "hesia_random";
 
-   function Watchdog_Init
-     (W          : access Watchdog;
-      Timeout_Ms : Interfaces.C.unsigned_long_long;
-      Max_Missed : Interfaces.C.unsigned;
-      Err        : access Error) return Status
-     with Import, Convention => C, External_Name => "hesia_watchdog_init";
-
-   function Watchdog_Arm
-     (W   : access Watchdog;
+   -- Signature API
+   function Sig_Public_Key_Bytes
+     (Alg : Sig_Algorithm;
+      Len : access Interfaces.C.size_t;
       Err : access Error) return Status
-     with Import, Convention => C, External_Name => "hesia_watchdog_arm";
+     with Import, Convention => C, External_Name => "hesia_sig_public_key_bytes";
 
-   function Watchdog_Heartbeat
-     (W   : access Watchdog;
+   function Sig_Secret_Key_Bytes
+     (Alg : Sig_Algorithm;
+      Len : access Interfaces.C.size_t;
       Err : access Error) return Status
-     with Import, Convention => C, External_Name => "hesia_watchdog_heartbeat";
+     with Import, Convention => C, External_Name => "hesia_sig_secret_key_bytes";
 
-   function Watchdog_Check
-     (W   : access Watchdog;
-      Err : access Error) return Status
-     with Import, Convention => C, External_Name => "hesia_watchdog_check";
+   function Sig_Keypair
+     (Alg    : Sig_Algorithm;
+      PK     : System.Address;
+      PK_Len : Interfaces.C.size_t;
+      SK     : System.Address;
+      SK_Len : Interfaces.C.size_t;
+      Err    : access Error) return Status
+     with Import, Convention => C, External_Name => "hesia_sig_keypair";
 
-   procedure Watchdog_Disarm (W : access Watchdog)
-     with Import, Convention => C, External_Name => "hesia_watchdog_disarm";
+   -- Maintenance API
+   function Maintenance_Get_Info
+     (Info : access Maintenance_Info;
+      Err  : access Error) return Status
+     with Import, Convention => C, External_Name => "hesia_maintenance_get_info";
 
 end Hesia_Core;

@@ -38,16 +38,18 @@ int cmd_keygen(const char *alg) {
     uint8_t *pk, *sk;
     hesia_sig_algorithm_t sig_alg;
 
-    if (strcmp(alg, "ed25519") == 0) sig_alg = HESIA_SIG_ED25519;
-    else if (strcmp(alg, "mldsa65") == 0) sig_alg = HESIA_SIG_ML_DSA_65;
+    if (strcmp(alg, "mldsa65") == 0) sig_alg = HESIA_SIG_ML_DSA_65;
     else if (strcmp(alg, "mldsa87") == 0) sig_alg = HESIA_SIG_ML_DSA_87;
     else {
         fprintf(stderr, "Unknown algorithm: %s\n", alg);
         return 1;
     }
 
-    hesia_sig_public_key_bytes(sig_alg, &pk_len, &err);
-    hesia_sig_secret_key_bytes(sig_alg, &sk_len, &err);
+    if (hesia_sig_public_key_bytes(sig_alg, &pk_len, &err) != HESIA_STATUS_OK ||
+        hesia_sig_secret_key_bytes(sig_alg, &sk_len, &err) != HESIA_STATUS_OK) {
+        fprintf(stderr, "Keygen unavailable: %s\n", hesia_error_message(&err));
+        return 1;
+    }
 
     pk = malloc(pk_len);
     sk = malloc(sk_len);

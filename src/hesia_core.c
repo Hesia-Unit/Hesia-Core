@@ -33,7 +33,6 @@
 #endif
 
 #include "algorithms/ascon.h"
-#include "algorithms/ed25519.h"
 
 static hesia_status_t hsc_fail(
     hesia_error_t *error,
@@ -1008,65 +1007,31 @@ hesia_status_t hesia_pqc_verify(
 
 hesia_status_t hesia_sig_public_key_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
     hesia_error_init(error);
-    if (algorithm == HESIA_SIG_ED25519) {
-        if (out_len == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
-        *out_len = 32; return HESIA_STATUS_OK;
-    }
     return hesia_pqc_public_key_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
 }
 
 hesia_status_t hesia_sig_secret_key_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
     hesia_error_init(error);
-    if (algorithm == HESIA_SIG_ED25519) {
-        if (out_len == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
-        *out_len = 64; return HESIA_STATUS_OK;
-    }
     return hesia_pqc_secret_key_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
 }
 
 hesia_status_t hesia_sig_signature_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
     hesia_error_init(error);
-    if (algorithm == HESIA_SIG_ED25519) {
-        if (out_len == NULL) return HESIA_STATUS_INVALID_ARGUMENT;
-        *out_len = 64; return HESIA_STATUS_OK;
-    }
     return hesia_pqc_signature_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
 }
 
 hesia_status_t hesia_sig_keypair(hesia_sig_algorithm_t algorithm, uint8_t *public_key, size_t public_key_len, uint8_t *secret_key, size_t secret_key_len, hesia_error_t *error) {
     hesia_error_init(error);
-    if (algorithm == HESIA_SIG_ED25519) {
-        uint8_t seed[32];
-        if (public_key_len < 32 || secret_key_len < 64) return HESIA_STATUS_BUFFER_TOO_SMALL;
-        hesia_random(seed, 32, error);
-        ed25519_keypair(public_key, secret_key, seed);
-        return HESIA_STATUS_OK;
-    }
     return hesia_pqc_keypair((hesia_pqc_algorithm_t)algorithm, public_key, public_key_len, secret_key, secret_key_len, error);
 }
 
 hesia_status_t hesia_sig_sign(hesia_sig_algorithm_t algorithm, const uint8_t *secret_key, size_t secret_key_len, const uint8_t *message, size_t message_len, uint8_t *signature, size_t signature_capacity, size_t *signature_len, hesia_error_t *error) {
     hesia_error_init(error);
-    if (algorithm == HESIA_SIG_ED25519) {
-        uint8_t public_key[32];
-        if (signature_capacity < 64) return HESIA_STATUS_BUFFER_TOO_SMALL;
-        /* Convention: secret_key is seed (32) + public_key (32) */
-        if (secret_key_len < 64) return HESIA_STATUS_INVALID_ARGUMENT;
-        memcpy(public_key, secret_key + 32, 32); 
-        ed25519_sign(signature, message, message_len, public_key, secret_key);
-        *signature_len = 64;
-        return HESIA_STATUS_OK;
-    }
     return hesia_pqc_sign((hesia_pqc_algorithm_t)algorithm, secret_key, secret_key_len, message, message_len, signature, signature_capacity, signature_len, error);
 }
 
 hesia_status_t hesia_sig_verify(hesia_sig_algorithm_t algorithm, const uint8_t *public_key, size_t public_key_len, const uint8_t *message, size_t message_len, const uint8_t *signature, size_t signature_len, hesia_error_t *error) {
     hesia_error_init(error);
-    if (algorithm == HESIA_SIG_ED25519) {
-        if (public_key_len != 32 || signature_len != 64) return HESIA_STATUS_INVALID_ARGUMENT;
-        if (ed25519_verify(signature, message, message_len, public_key)) return HESIA_STATUS_OK;
-        return HESIA_STATUS_AUTHENTICATION_FAILED;
-    }
     return hesia_pqc_verify((hesia_pqc_algorithm_t)algorithm, public_key, public_key_len, message, message_len, signature, signature_len, error);
 }
 

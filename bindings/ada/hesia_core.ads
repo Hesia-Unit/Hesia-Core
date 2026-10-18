@@ -21,7 +21,6 @@ package Hesia_Core is
    Status_Maintenance_Required : constant Status := 11;
 
    subtype Sig_Algorithm is Interfaces.C.int;
-   Sig_Ed25519    : constant Sig_Algorithm := 1;
    Sig_ML_DSA_65  : constant Sig_Algorithm := 2;
    Sig_ML_DSA_87  : constant Sig_Algorithm := 3;
 

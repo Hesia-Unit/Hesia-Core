@@ -9,7 +9,7 @@ HESIA CoreLib est une bibliothèque système open source conçue pour la sécuri
 ### 2. Architecture de Sécurité
 La bibliothèque repose sur trois piliers :
 - **PQC (Post-Quantum)** : Utilisation de ML-KEM et ML-DSA (Dilithium) pour résister aux futures attaques quantiques.
-- **Lightweight Crypto** : Algorithmes natifs optimisés (ASCON-128, Ed25519) pour les plateformes sans accélération matérielle.
+- **Lightweight Crypto** : Algorithme natif ASCON-128 pour les plateformes sans accélération matérielle.
 - **System Guard** : Watchdog et Inference-Guard pour surveiller l'intégrité des exécutions IA.
 
 ### 3. Guide d'intégration ADA
@@ -34,7 +34,6 @@ Nouveauté de la v0.2.0, l'API de maintenance permet d'auditer l'état du systè
 ### 5. Utilisation du HESIA CLI
 L'outil `hesia-cli` permet une gestion rapide depuis le terminal :
 - `hesia-cli info` : Audit du système.
-- `hesia-cli keygen ed25519` : Génération de clés classiques.
 - `hesia-cli keygen mldsa65` : Génération de clés PQC.
 
 ### 6. Compilation pour ARM/Jetson

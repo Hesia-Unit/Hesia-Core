@@ -6,7 +6,7 @@ HESIA CoreLib is the open source systems library for HESIA-style embedded securi
 
 - **Stable C ABI**: Long-lived firmware and host integrations.
 - **Post-Quantum Cryptography**: ML-KEM and ML-DSA via `liboqs`.
-- **Lightweight Cryptography**: Native, high-performance ASCON-128 and Ed25519 for embedded systems.
+- **Lightweight Cryptography**: Native ASCON-128 AEAD for embedded systems.
 - **Maintenance & Audit**: Built-in APIs for firmware health, tamper detection, and security metadata.
 - **Embedded Guardrails**: Watchdog and Inference-Guard primitives for AI-enabled robotics.
 - **ARM Optimized**: Explicit support for ARM Aarch64 and Cortex-M targets.

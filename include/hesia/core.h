@@ -64,7 +64,7 @@ typedef enum hesia_pqc_algorithm {
 } hesia_pqc_algorithm_t;
 
 typedef enum hesia_sig_algorithm {
-    HESIA_SIG_ED25519 = 1,
+    /* 1 is reserved: it was Ed25519, whose native code was a placeholder. */
     HESIA_SIG_ML_DSA_65 = 2,
     HESIA_SIG_ML_DSA_87 = 3
 } hesia_sig_algorithm_t;

@@ -26,14 +26,12 @@ if(HESIA_CORE_BUILD_SHARED)
     add_library(hesia_core SHARED 
         src/hesia_core.c
         src/algorithms/ascon.c
-        src/algorithms/ed25519.c
     )
     target_compile_definitions(hesia_core PRIVATE HESIA_CORE_EXPORTS HESIA_CORE_BUILD_SHARED)
 else()
     add_library(hesia_core STATIC 
         src/hesia_core.c
         src/algorithms/ascon.c
-        src/algorithms/ed25519.c
     )
 endif()
 

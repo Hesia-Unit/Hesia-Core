@@ -21,7 +21,6 @@ def main():
         print("Architecture available for:")
         print("  - ML-KEM / ML-DSA (Post-Quantum)")
         print("  - ASCON-128 (Lightweight AEAD)")
-        print("  - Ed25519 (Signature)")
         print("  - Watchdog & Inference Guard")
         
         print("\nAPI example:")

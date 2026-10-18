@@ -16,11 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Provider-free baseline: OpenSSL and liboqs are not available on a fresh checkout.
       - name: Configure
         run: >
           cmake -S . -B build
           -DHESIA_CORE_BUILD_SHARED=OFF
           -DHESIA_CORE_BUILD_TESTS=ON
+          -DHESIA_CORE_WITH_OPENSSL=OFF
+          -DHESIA_CORE_WITH_LIBOQS=OFF
 
       - name: Build
         run: cmake --build build --config Release

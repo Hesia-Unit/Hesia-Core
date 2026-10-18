@@ -99,6 +99,17 @@ static void test_optional_crypto_is_fail_closed(void) {
     }
 }
 
+static void test_signature_algorithms_fail_closed(void) {
+    hesia_error_t error;
+    size_t len = 0u;
+    uint8_t byte = 0u;
+
+    /* 1 was Ed25519: it must be rejected, not forwarded to a PQC algorithm. */
+    assert(hesia_sig_public_key_bytes((hesia_sig_algorithm_t)1, &len, &error) == HESIA_STATUS_UNSUPPORTED);
+    assert(hesia_sig_verify((hesia_sig_algorithm_t)1, &byte, 1u, &byte, 1u, &byte, 1u, &error) ==
+           HESIA_STATUS_UNSUPPORTED);
+}
+
 int main(void) {
     assert(strcmp(hesia_version(), "0.1.0") == 0);
     assert(hesia_feature_available(HESIA_FEATURE_WATCHDOG) == 1);
@@ -110,6 +121,7 @@ int main(void) {
     test_watchdog();
     test_inference_guard();
     test_optional_crypto_is_fail_closed();
+    test_signature_algorithms_fail_closed();
 
     return 0;
 }

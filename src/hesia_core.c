@@ -1005,34 +1005,73 @@ hesia_status_t hesia_pqc_verify(
 #endif
 }
 
+/* hesia_sig_algorithm_t and hesia_pqc_algorithm_t number ML-DSA differently, so map
+   explicitly: a cast turned HESIA_SIG_ML_DSA_65 into HESIA_PQC_ML_KEM_1024. */
+static int hsc_sig_to_pqc(hesia_sig_algorithm_t algorithm, hesia_pqc_algorithm_t *out) {
+    switch (algorithm) {
+    case HESIA_SIG_ML_DSA_65:
+        *out = HESIA_PQC_ML_DSA_65;
+        return 1;
+    case HESIA_SIG_ML_DSA_87:
+        *out = HESIA_PQC_ML_DSA_87;
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 hesia_status_t hesia_sig_public_key_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
+    hesia_pqc_algorithm_t pqc;
     hesia_error_init(error);
-    return hesia_pqc_public_key_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
+    if (!hsc_sig_to_pqc(algorithm, &pqc)) {
+        return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "sig", "unsupported signature algorithm");
+    }
+    return hesia_pqc_public_key_bytes(pqc, out_len, error);
 }
 
 hesia_status_t hesia_sig_secret_key_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
+    hesia_pqc_algorithm_t pqc;
     hesia_error_init(error);
-    return hesia_pqc_secret_key_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
+    if (!hsc_sig_to_pqc(algorithm, &pqc)) {
+        return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "sig", "unsupported signature algorithm");
+    }
+    return hesia_pqc_secret_key_bytes(pqc, out_len, error);
 }
 
 hesia_status_t hesia_sig_signature_bytes(hesia_sig_algorithm_t algorithm, size_t *out_len, hesia_error_t *error) {
+    hesia_pqc_algorithm_t pqc;
     hesia_error_init(error);
-    return hesia_pqc_signature_bytes((hesia_pqc_algorithm_t)algorithm, out_len, error);
+    if (!hsc_sig_to_pqc(algorithm, &pqc)) {
+        return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "sig", "unsupported signature algorithm");
+    }
+    return hesia_pqc_signature_bytes(pqc, out_len, error);
 }
 
 hesia_status_t hesia_sig_keypair(hesia_sig_algorithm_t algorithm, uint8_t *public_key, size_t public_key_len, uint8_t *secret_key, size_t secret_key_len, hesia_error_t *error) {
+    hesia_pqc_algorithm_t pqc;
     hesia_error_init(error);
-    return hesia_pqc_keypair((hesia_pqc_algorithm_t)algorithm, public_key, public_key_len, secret_key, secret_key_len, error);
+    if (!hsc_sig_to_pqc(algorithm, &pqc)) {
+        return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "sig", "unsupported signature algorithm");
+    }
+    return hesia_pqc_keypair(pqc, public_key, public_key_len, secret_key, secret_key_len, error);
 }
 
 hesia_status_t hesia_sig_sign(hesia_sig_algorithm_t algorithm, const uint8_t *secret_key, size_t secret_key_len, const uint8_t *message, size_t message_len, uint8_t *signature, size_t signature_capacity, size_t *signature_len, hesia_error_t *error) {
+    hesia_pqc_algorithm_t pqc;
     hesia_error_init(error);
-    return hesia_pqc_sign((hesia_pqc_algorithm_t)algorithm, secret_key, secret_key_len, message, message_len, signature, signature_capacity, signature_len, error);
+    if (!hsc_sig_to_pqc(algorithm, &pqc)) {
+        return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "sig", "unsupported signature algorithm");
+    }
+    return hesia_pqc_sign(pqc, secret_key, secret_key_len, message, message_len, signature, signature_capacity, signature_len, error);
 }
 
 hesia_status_t hesia_sig_verify(hesia_sig_algorithm_t algorithm, const uint8_t *public_key, size_t public_key_len, const uint8_t *message, size_t message_len, const uint8_t *signature, size_t signature_len, hesia_error_t *error) {
+    hesia_pqc_algorithm_t pqc;
     hesia_error_init(error);
-    return hesia_pqc_verify((hesia_pqc_algorithm_t)algorithm, public_key, public_key_len, message, message_len, signature, signature_len, error);
+    if (!hsc_sig_to_pqc(algorithm, &pqc)) {
+        return hsc_fail(error, HESIA_STATUS_UNSUPPORTED, "sig", "unsupported signature algorithm");
+    }
+    return hesia_pqc_verify(pqc, public_key, public_key_len, message, message_len, signature, signature_len, error);
 }
 
 hesia_status_t hesia_maintenance_get_info(hesia_maintenance_info_t *info, hesia_error_t *error) {

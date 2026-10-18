@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
   and `make test` run.
 - Ascon-128 decryption compares the tag in constant time and zeroes the plaintext
   buffer when the tag does not match.
+- The `hesia_sig_*` functions cast the signature algorithm to a PQC algorithm, but the two
+  enums number ML-DSA differently: `HESIA_SIG_ML_DSA_65` reached ML-KEM-1024 and
+  `HESIA_SIG_ML_DSA_87` reached ML-DSA-65. They now map explicitly and reject other values.
 - The Makefile and the portable build commands in the README now compile
   `src/algorithms/ascon.c`; linking failed without it.
 

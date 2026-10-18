@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- The native Ascon-128 added the round constant to the wrong state word, so its output
+  was not Ascon-128. It now matches all 1,089 official v1.2 test vectors, which `ctest`
+  and `make test` run.
+- Ascon-128 decryption compares the tag in constant time and zeroes the plaintext
+  buffer when the tag does not match.
+- The Makefile and the portable build commands in the README now compile
+  `src/algorithms/ascon.c`; linking failed without it.
+
 ### Removed
 
 - `HESIA_SIG_ED25519` and the native Ed25519 code. It was a placeholder: keys were derived

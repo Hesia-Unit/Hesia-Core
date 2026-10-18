@@ -6,7 +6,7 @@ HESIA CoreLib is the open source systems library for HESIA-style embedded securi
 
 - **Stable C ABI**: Long-lived firmware and host integrations.
 - **Post-Quantum Cryptography**: ML-KEM and ML-DSA via `liboqs`.
-- **Lightweight Cryptography**: Native ASCON-128 AEAD for embedded systems.
+- **Lightweight Cryptography**: Native Ascon-128 (v1.2) AEAD for embedded systems, checked against the 1,089 official test vectors.
 - **Maintenance & Audit**: Built-in APIs for firmware health, tamper detection, and security metadata.
 - **Embedded Guardrails**: Watchdog and Inference-Guard primitives for AI-enabled robotics.
 - **ARM Optimized**: Explicit support for ARM Aarch64 and Cortex-M targets.
@@ -56,6 +56,7 @@ HESIA CoreLib prioritizes fail-closed behavior. When hardware acceleration or pr
 - `bindings/`: Python, Rust, Swift, and Ada surfaces.
 - `examples/`: minimal C and Python examples.
 - `tests/`: portable unit tests.
+- `tests/kat/`: official Ascon-128 v1.2 test vectors from the reference implementation, run by `ctest` and `make test`.
 - `third_party/dependencies.lock.json`: pinned OpenSSL, liboqs, CMake, and WiX versions and SHA-256 digests. Everything else under `third_party/` is fetched, never committed.
 - `scripts/`: native Windows, Linux, MSI, and tarball packaging workflows.
 
@@ -99,7 +100,8 @@ Portable provider-free baseline:
 
 ```sh
 cc -Iinclude -c src/hesia_core.c -o hesia_core.o
-ar rcs libhesia_core.a hesia_core.o
+cc -c src/algorithms/ascon.c -o ascon.o
+ar rcs libhesia_core.a hesia_core.o ascon.o
 cc -Iinclude tests/test_core.c libhesia_core.a -o test_core
 ./test_core
 ```

@@ -11,7 +11,7 @@ static inline uint64_t ROR64(uint64_t x, int n) {
 
 static inline void ascon_permutation(ascon_state_t *s, int rounds) {
   for (int i = 12 - rounds; i < 12; ++i) {
-    s->x0 ^= (uint64_t)(0xf0u - i * 0x10u) << 32 | (uint64_t)(0x0fu + i);
+    s->x2 ^= ((0xfull - (uint64_t)i) << 4) | (uint64_t)i;
     s->x0 ^= s->x4; s->x4 ^= s->x3; s->x2 ^= s->x1;
     uint64_t t0 = s->x0; uint64_t t1 = s->x1; uint64_t t2 = s->x2; uint64_t t3 = s->x3; uint64_t t4 = s->x4;
     t0 =~ t0; t1 =~ t1; t2 =~ t2; t3 =~ t3; t4 =~ t4;
@@ -34,6 +34,12 @@ static inline uint64_t load64(const uint8_t *p) {
 
 static inline void store64(uint8_t *p, uint64_t x) {
   for (int i = 7; i >= 0; --i) { p[i] = (uint8_t)x; x >>= 8; }
+}
+
+/* volatile so the compiler cannot drop the stores. */
+static void wipe(uint8_t *p, size_t len) {
+  volatile uint8_t *v = p;
+  while (len--) *v++ = 0;
 }
 
 int ascon128_encrypt(uint8_t *t, uint8_t *c, const uint8_t *k, const uint8_t *n, const uint8_t *a, size_t alen, const uint8_t *p, size_t plen) {
@@ -76,6 +82,8 @@ int ascon128_encrypt(uint8_t *t, uint8_t *c, const uint8_t *k, const uint8_t *n,
 
 int ascon128_decrypt(uint8_t *p, const uint8_t *k, const uint8_t *n, const uint8_t *a, size_t alen, const uint8_t *c, size_t clen, const uint8_t *t) {
   ascon_state_t s;
+  uint8_t *p_start = p;
+  size_t p_len = clen;
   uint64_t k0 = load64(k);
   uint64_t k1 = load64(k + 8);
   uint64_t n0 = load64(n);
@@ -112,6 +120,10 @@ int ascon128_decrypt(uint8_t *p, const uint8_t *k, const uint8_t *n, const uint8
   s.x1 ^= k0; s.x2 ^= k1;
   ascon_permutation(&s, 12);
   s.x3 ^= k0; s.x4 ^= k1;
-  if (load64(t) != s.x3 || load64(t + 8) != s.x4) return -1;
+  uint64_t diff = (load64(t) ^ s.x3) | (load64(t + 8) ^ s.x4);
+  if (diff != 0) {
+    wipe(p_start, p_len);
+    return -1;
+  }
   return 0;
 }

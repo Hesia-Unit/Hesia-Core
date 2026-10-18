@@ -34,32 +34,6 @@ function Invoke-Checked {
     }
 }
 
-function Download-File {
-    param([string]$Url, [string]$OutFile)
-    if ((Test-Path $OutFile) -and -not $Force) {
-        return
-    }
-    New-Item -ItemType Directory -Force (Split-Path $OutFile) | Out-Null
-    Write-Host "Downloading $Url"
-    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
-}
-
-function Expand-TarGz {
-    param([string]$Archive, [string]$Destination, [string]$Marker)
-    if ((Test-Path $Marker) -and -not $Force) {
-        return
-    }
-    if (Test-Path $Destination) {
-        Remove-Item -LiteralPath $Destination -Recurse -Force
-    }
-    New-Item -ItemType Directory -Force $Destination | Out-Null
-    tar -xzf $Archive -C $Destination --strip-components 1
-    if ($LASTEXITCODE -ne 0) {
-        throw "tar failed for $Archive"
-    }
-    New-Item -ItemType File -Force $Marker | Out-Null
-}
-
 function Ensure-GitPerlCompatibilityShim {
     param([string]$ShimRoot)
     $shimDir = Join-Path $ShimRoot "Locale/Maketext"
@@ -139,12 +113,12 @@ sub pod2usage {
 
 $manifest = Get-Content (Join-Path $Root "third_party/dependencies.lock.json") -Raw | ConvertFrom-Json
 $thirdParty = Join-Path $Root "third_party"
-$downloads = Join-Path $thirdParty "downloads"
 $sources = Join-Path $thirdParty "src"
 $tools = Join-Path $thirdParty "tools"
 $install = Join-Path $thirdParty "install/windows-x86_64"
 $opensslPrefix = Join-Path $install "openssl"
 $liboqsPrefix = Join-Path $install "liboqs"
+$fetchDeps = Join-Path $PSScriptRoot "fetch-deps.ps1"
 
 Require-Command gcc | Out-Null
 Require-Command perl | Out-Null
@@ -153,26 +127,15 @@ Ensure-GitPerlCompatibilityShim (Join-Path $thirdParty "perl_shims")
 
 $cmake = (Get-Command cmake -ErrorAction SilentlyContinue).Source
 if (-not $cmake) {
-    $cmakeZip = Join-Path $downloads "cmake-$($manifest.buildTools.cmake.version)-windows-x86_64.zip"
-    $cmakeRoot = Join-Path $tools "cmake-$($manifest.buildTools.cmake.version)-windows-x86_64"
-    Download-File $manifest.buildTools.cmake.windowsUrl $cmakeZip
-    if (-not (Test-Path (Join-Path $cmakeRoot "bin/cmake.exe")) -or $Force) {
-        if (Test-Path $cmakeRoot) {
-            Remove-Item -LiteralPath $cmakeRoot -Recurse -Force
-        }
-        Expand-Archive -Path $cmakeZip -DestinationPath $tools -Force
-    }
-    $cmake = Join-Path $cmakeRoot "bin/cmake.exe"
+    & $fetchDeps -Root $Root -Name cmake -Force:$Force
+    $cmake = Join-Path $tools "cmake-$($manifest.buildTools.cmake.version)-windows-x86_64/bin/cmake.exe"
 }
 
 if (-not $SkipOpenSSL) {
-    $opensslArchive = Join-Path $downloads "openssl-$($manifest.dependencies.openssl.version).tar.gz"
     $opensslSource = Join-Path $sources "openssl-$($manifest.dependencies.openssl.version)"
-    $opensslMarker = Join-Path $opensslSource ".hesia-extracted"
     $opensslLib = Join-Path $opensslPrefix "lib/libcrypto.a"
     $opensslLib64 = Join-Path $opensslPrefix "lib64/libcrypto.a"
-    Download-File $manifest.dependencies.openssl.url $opensslArchive
-    Expand-TarGz $opensslArchive $opensslSource $opensslMarker
+    & $fetchDeps -Root $Root -Name openssl -Force:$Force
     if (((-not (Test-Path $opensslLib)) -and (-not (Test-Path $opensslLib64))) -or $Force) {
         $opensslPrefixArg = $opensslPrefix.Replace("\", "/")
         $opensslDirArg = "$opensslPrefixArg/ssl"
@@ -200,13 +163,10 @@ if (-not $SkipOpenSSL) {
 }
 
 if (-not $SkipLiboqs) {
-    $liboqsArchive = Join-Path $downloads "liboqs-$($manifest.dependencies.liboqs.version).tar.gz"
     $liboqsSource = Join-Path $sources "liboqs-$($manifest.dependencies.liboqs.version)"
-    $liboqsMarker = Join-Path $liboqsSource ".hesia-extracted"
     $liboqsBuild = Join-Path $thirdParty "build/windows-x86_64/liboqs"
     $liboqsLib = Join-Path $liboqsPrefix "lib/liboqs.a"
-    Download-File $manifest.dependencies.liboqs.url $liboqsArchive
-    Expand-TarGz $liboqsArchive $liboqsSource $liboqsMarker
+    & $fetchDeps -Root $Root -Name liboqs -Force:$Force
     if ((-not (Test-Path $liboqsLib)) -or $Force) {
         if (Test-Path $liboqsBuild) {
             Remove-Item -LiteralPath $liboqsBuild -Recurse -Force

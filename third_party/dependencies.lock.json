@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "project": "hesia-core",
-  "policy": "Vendored, reproducible provider builds for the public CoreLib distribution.",
+  "policy": "Pinned, checksum-verified provider builds. Archives are fetched by scripts/fetch-deps.* and never committed.",
   "dependencies": {
     "openssl": {
       "version": "3.5.6",
@@ -10,7 +10,8 @@
       "windowsConfigureTarget": "mingw64",
       "linuxConfigureTarget": "linux-generic64",
       "license": "Apache-2.0",
-      "purpose": "AES-256-GCM, provider random, future TLS-facing helpers"
+      "purpose": "AES-256-GCM, provider random, future TLS-facing helpers",
+      "sha256": "deae7c80cba99c4b4f940ecadb3c3338b13cb77418409238e57d7f31f2a3b736"
     },
     "liboqs": {
       "version": "0.15.0",
@@ -22,19 +23,22 @@
         "SIG_ml_dsa_87"
       ],
       "license": "MIT",
-      "purpose": "ML-KEM and ML-DSA post-quantum provider"
+      "purpose": "ML-KEM and ML-DSA post-quantum provider",
+      "sha256": "3983f7cd1247f37fb76a040e6fd684894d44a84cecdcfbdb90559b3216684b5c"
     }
   },
   "buildTools": {
     "cmake": {
       "version": "3.31.8",
       "windowsUrl": "https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-windows-x86_64.zip",
-      "purpose": "Portable Windows build of liboqs when CMake is not installed"
+      "purpose": "Portable Windows build of liboqs when CMake is not installed",
+      "sha256": "81aa9964dbabd71fe02e7ec50472fd3ad56138c49944515ece9001efbff8d719"
     },
     "wix": {
       "version": "3.14.1",
       "windowsUrl": "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip",
-      "purpose": "MSI generation without requiring a global WiX install"
+      "purpose": "MSI generation without requiring a global WiX install",
+      "sha256": "6ac824e1642d6f7277d0ed7ea09411a508f6116ba6fae0aa5f2c7daa2ff43d31"
     }
   }
 }

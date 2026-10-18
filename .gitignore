@@ -13,3 +13,7 @@ dist/
 *.pyc
 __pycache__/
 
+# Third-party archives, sources, tools and builds are fetched by
+# scripts/fetch-deps.* and verified against the lock file.
+third_party/*
+!third_party/dependencies.lock.json

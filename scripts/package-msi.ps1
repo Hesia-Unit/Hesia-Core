@@ -7,16 +7,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Download-File {
-    param([string]$Url, [string]$OutFile)
-    if (Test-Path $OutFile) {
-        return
-    }
-    New-Item -ItemType Directory -Force (Split-Path $OutFile) | Out-Null
-    Write-Host "Downloading $Url"
-    Invoke-WebRequest -Uri $Url -OutFile $OutFile -UseBasicParsing
-}
-
 function Invoke-Checked {
     param([string]$FilePath, [string[]]$Arguments, [string]$WorkingDirectory)
     Write-Host ">> $FilePath $($Arguments -join ' ')"
@@ -42,13 +32,7 @@ $candle = Join-Path $wixDir "candle.exe"
 $light = Join-Path $wixDir "light.exe"
 $heat = Join-Path $wixDir "heat.exe"
 if (-not (Test-Path $candle) -or -not (Test-Path $light) -or -not (Test-Path $heat)) {
-    $zip = Join-Path $Root "third_party/downloads/wix-$($manifest.buildTools.wix.version).zip"
-    Download-File $manifest.buildTools.wix.windowsUrl $zip
-    if (Test-Path $wixDir) {
-        Remove-Item -LiteralPath $wixDir -Recurse -Force
-    }
-    New-Item -ItemType Directory -Force $wixDir | Out-Null
-    Expand-Archive -Path $zip -DestinationPath $wixDir -Force
+    & (Join-Path $PSScriptRoot "fetch-deps.ps1") -Root $Root -Name wix
 }
 
 $wixWork = Join-Path $Root "build/msi"

@@ -56,10 +56,26 @@ HESIA CoreLib prioritizes fail-closed behavior. When hardware acceleration or pr
 - `bindings/`: Python, Rust, Swift, and Ada surfaces.
 - `examples/`: minimal C and Python examples.
 - `tests/`: portable unit tests.
-- `third_party/dependencies.lock.json`: pinned OpenSSL, liboqs, CMake, and WiX versions.
+- `third_party/dependencies.lock.json`: pinned OpenSSL, liboqs, CMake, and WiX versions and SHA-256 digests. Everything else under `third_party/` is fetched, never committed.
 - `scripts/`: native Windows, Linux, MSI, and tarball packaging workflows.
 
 ## Build
+
+### Third-party dependencies
+
+OpenSSL, liboqs, and the Windows build tools are not committed. Their versions, download URLs, and SHA-256 digests are pinned in `third_party/dependencies.lock.json`. The fetch scripts download them, check the digests, and extract them under `third_party/`, which git ignores:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\fetch-deps.ps1
+```
+
+```sh
+bash scripts/fetch-deps.sh
+```
+
+`build-deps-windows.ps1` and `build-deps-linux.sh` call these scripts themselves, so run them on their own only to prepare the sources ahead of time.
+
+### Build commands
 
 Provider-enabled Windows build:
 
